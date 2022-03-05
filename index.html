@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
+
+  <style type="text/css" media="screen">
+
+  .hidden {
+    display: none;
+  }
+
+  .user-name {
+    font-style: italic;
+  }
+
+  .messages {
+    width: 300px;
+    border: 1px solid #8be82b;
+    border-radius: 5px;
+    background-color: #def8c3;
+    text-align: right;
+    margin: 0.3rem 0;
+  }
+
+  .my-messages {
+    width: 300px;
+    border: 1px solid #2bcbe8;
+    border-radius: 5px;
+    background-color: #c3f0f8;
+    text-align: left;
+    margin: 0.3rem 0;
+  }
+
+  .server-messages {
+    width: 300px;
+    border: 1px solid #e8c32b;
+    border-radius:  5px;
+    background-color: #f8eec3;
+    text-align: center;
+    font-style:  italic;
+    margin: 0.3rem 0;
+  }
+
+  </style>
+</head>
+
+<body>
+  <form id="form">
+    <label id="name-label" for="name-input">Введите имя</label>
+    <input type="text" id="name-input" pattern="[A-Za-z\d.-_]{3,19}" required title=" Должно быть 3 до 19 символов">
+    <span id="user-greeting" class="hidden"></span>
+    <br>
+
+    <label for="msg-input">Введите сообщение</label>
+    <input type="text" id="msg-input"><br>
+    <button type="submit" id="send-btn">Отправить</button>
+  </form>
+  <br>
+  <div id="messages"></div>
+
+  <script>
+    const socket = io('localhost:3000');
+
+    const form = document.getElementById('form');
+    const nameInput = document.getElementById('name-input');
+    const nameLabel = document.getElementById('name-label');
+    const userGreeting = document.getElementById('user-greeting');
+    const msgInput = document.getElementById('msg-input');
+    const messages = document.getElementById('messages');
+
+    let userName;
+    let clientId;
+
+
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      if (!userName) {
+        userName = nameInput.value;
+        nameLabel.classList.add('hidden');
+        nameInput.classList.add('hidden');
+        userGreeting.innerHTML = `Пользователь <span class="user-name">${userName}</span>.`;
+        userGreeting.classList.remove('hidden');
+      }
+
+      socket.emit('chat-message', {
+        msg: msgInput.value,
+        userName,
+        clientId
+      })
+
+    })
+
+    socket.on('client-id', (data) => {
+      clientId = data.clientId;
+    })
+
+    socket.on('new-client', () => {
+      const msgEl = document.createElement('div');
+      msgEl.innerText = 'Новый пользователь подключился';
+      msgEl.classList.add('server-messages');
+      messages.insertAdjacentElement('afterbegin', msgEl);
+
+    })
+
+    socket.on('server-message', (data) => {
+      const msgEl = document.createElement('div');
+      msgEl.innerHTML = `${data.msg} - <small>${data.userName}</small>`;
+      if (data.clientId === clientId) {
+        msgEl.classList.add('my-messages');
+      } else {
+        msgEl.classList.add('messages');
+      }
+      messages.insertAdjacentElement('afterbegin', msgEl);
+    })
+
+
+    
+  </script>
+
+</body>
+</html>
